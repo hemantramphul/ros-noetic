@@ -1,6 +1,6 @@
 # ROS Noetic Installation Manual (Ubuntu 20.04)
 
-_28 October 2026 · Hemant Ramphul_
+_28 October 2026 · [Hemant Ramphul](https://www.linkedin.com/in/hemantramphul/)_
 
 ## Overview
 
