@@ -1,6 +1,6 @@
 # ROS Noetic Installation Manual (Ubuntu 20.04)
 
-Oct 28, 2026 · @Hemant Ramphul
+_28 October 2026 · Hemant Ramphul_
 
 ## Overview
 
@@ -15,7 +15,22 @@ This manual installs ROS Noetic (ROS 1) on Ubuntu 20.04 and checks that it works
 
 Run every command in a terminal (Terminal, XFCE Terminal or Terminator). Commands go in one at a time unless shown as a group.
 
-&#91;embedded content: install flow · 4 steps, 2 checkpoints\]
+```mermaid
+flowchart TD
+    A["Check Python is 3.8"] --> B["Step 1: Add ROS repo"]
+    B --> C{"apt update clean?"}
+    C -- no --> D["Remove old ROS key"]
+    D -- then retry --> B
+    C -- yes --> E["Step 2: Install ROS"]
+    E --> F["Step 3: Set up rosdep"]
+    F --> G["Step 4: Choose mode"]
+    G --> H{"All 6 checks pass?"}
+    H -- yes --> I(["ROS is ready"])
+    H -- no --> J["Use Troubleshooting"]
+    J -- fix, then re-check --> G
+    classDef done fill:#dbe8f7,stroke:#2f6fcf,stroke-width:2px,color:#000
+    class I done
+```
 
 A failed check never moves you forward: an unclean `apt update` sends you back to remove the old key, and a failed verification sends you to Troubleshooting.
 
@@ -23,19 +38,19 @@ A failed check never moves you forward: an unclean `apt update` sends you back t
 
 Check that Ubuntu's default Python is 3.8. Ubuntu 20.04's own tools and ROS Noetic both depend on it; another version breaks Terminal, `lsb_release` and ROS.
 
-```
+```bash
 python3 --version
 ```
 
 If it shows anything other than 3.8.x, set it back:
 
-```
+```bash
 sudo ln -sf /usr/bin/python3.8 /usr/bin/python3
 ```
 
 Remove any old ROS repository files and the expired key, so they do not clash with the new setup:
 
-```
+```bash
 sudo rm -f /etc/apt/sources.list.d/ros-latest.list* /etc/apt/sources.list.d/ros1-latest.list*
 sudo apt-key del "C1CF 6E31 E6BA DE88 68B1  72B4 F42E D6FB AB17 C654"
 ```
@@ -46,7 +61,7 @@ It is fine if these report that nothing was found.
 
 Install the official `ros-apt-source` package. It adds both the ROS repository and its signing key, and keeps the key updated through normal `apt` updates.
 
-```
+```bash
 sudo apt install curl
 export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
 curl -L -o /tmp/ros-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros-apt-source_${ROS_APT_SOURCE_VERSION}.focal_all.deb"
@@ -62,7 +77,7 @@ Do not also run the wiki's "Setup your sources.list" and "Set up your keys" step
 
 Install the full desktop version. It includes RViz, rqt, Gazebo and the turtlesim test tools, and downloads a few GB.
 
-```
+```bash
 sudo apt install ros-noetic-desktop-full
 ```
 
@@ -78,7 +93,7 @@ Extra packages follow the pattern `sudo apt install ros-noetic-<name>`; `apt sea
 
 These tools build your own ROS packages and install their dependencies.
 
-```
+```bash
 sudo apt install python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential
 sudo rosdep init
 rosdep update
@@ -92,28 +107,38 @@ If `rosdep init` says the default sources list already exists, it was initialise
 
 ROS settings live in `~/.bashrc`, a hidden file in your home folder that runs each time a terminal opens. Add the ROS line only if it is not already there:
 
-```
+```bash
 grep -q '^source /opt/ros/noetic/setup.bash' ~/.bashrc || echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 ```
 
 Edit the file with `gedit ~/.bashrc` (or `nano ~/.bashrc`). A `#` at the start of a line switches it off. Choose one mode:
 
-&#91;embedded content: ROS modes · local vs robot\]
+```mermaid
+flowchart LR
+    subgraph local["Local mode: testing on this PC"]
+        PC1["<b>This PC</b><br/>roscore (master) runs here<br/>your nodes run here<br/>master URI: localhost"]
+    end
+    subgraph robot["Robot mode: working with the robot"]
+        PC2["<b>This PC</b><br/>your nodes<br/>IP: PC_IP"] -- finds master --> R["<b>Robot</b><br/>roscore (master)<br/>IP: ROBOT_IP"]
+    end
+    classDef master fill:#dbe8f7,stroke:#2f6fcf,stroke-width:2px,color:#000
+    class PC1,R master
+```
 
 In local mode everything runs on this PC; in robot mode your PC's nodes connect over the network to the master on the robot.
 
 **Local mode** — ROS runs on this PC only (testing):
 
-```
+```bash
 # export ROS_IP=<PC_IP>
 # export ROS_HOSTNAME=$ROS_IP
 # export ROS_MASTER_URI=http://<ROBOT_IP>:11311
 export ROS_MASTER_URI=http://localhost:11311
 ```
 
-**Robot mode** — this PC is the hotspot or on the robot's network, and the robot runs the ROS master. Replace PC\_IP with this PC's IP address and ROBOT\_IP with the robot's; run hostname -I on each machine to find them. Example: when this PC shares a hotspot, it is often 10.42.0.1 and the robot something like 10.42.0.56.
+**Robot mode** — this PC is the hotspot or on the robot's network, and the robot runs the ROS master. Replace PC_IP with this PC's IP address and ROBOT_IP with the robot's; run `hostname -I` on each machine to find them. Example: when this PC shares a hotspot, it is often 10.42.0.1 and the robot something like 10.42.0.56.
 
-```
+```bash
 export ROS_IP=<PC_IP>
 export ROS_HOSTNAME=$ROS_IP
 export ROS_MASTER_URI=http://<ROBOT_IP>:11311
@@ -135,7 +160,19 @@ ROS is correctly installed when all six checks below pass. Use local mode, and T
 
 A **node** is a running ROS program; a **topic** is a named channel nodes use to send and receive messages. `rqt_graph` draws them connected. Stop everything with Ctrl+C in each pane.
 
-&#91;embedded content: turtlesim · 3 nodes, 2 topics\]
+```mermaid
+flowchart LR
+    subgraph core["roscore (ROS master): every node registers here to find the others"]
+        T["<b>/teleop_turtle</b><br/>reads your arrow keys"] -- publishes --> CV(["<b>/turtle1/cmd_vel</b><br/>speed commands"])
+        CV -- subscribes --> S["<b>/turtlesim</b><br/>moves and draws turtle"]
+        S -- publishes --> P(["<b>/turtle1/pose</b><br/>position and angle"])
+        P -- subscribes --> E["<b>rostopic echo</b><br/>prints the messages"]
+    end
+    classDef topic fill:#dbe8f7,stroke:#2f6fcf,stroke-width:2px,color:#000
+    class CV,P topic
+```
+
+_Rectangles are nodes (running programs); rounded blue shapes are topics (named message channels)._
 
 Your arrow keys travel from `/teleop_turtle` onto `/turtle1/cmd_vel`, which `/turtlesim` reads; `rostopic echo` listens on `/turtle1/pose` the same way.
 
