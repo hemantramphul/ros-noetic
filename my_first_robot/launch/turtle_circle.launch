@@ -1,0 +1,8 @@
+<launch>
+  <!-- The turtle window -->
+  <node pkg="turtlesim" type="turtlesim_node" name="turtlesim"/>
+
+  <!-- Our two programs from my_first_robot -->
+  <node pkg="my_first_robot" type="move_turtle.py" name="move_turtle" output="screen"/>
+  <node pkg="my_first_robot" type="watch_turtle.py" name="watch_turtle" output="screen"/>
+</launch>
